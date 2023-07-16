@@ -1,5 +1,3 @@
-
-https://github.com/godHhh/TPTrack/assets/47073050/4ba8a96b-983b-4900-9eae-5f81e8f13752
 # TPTrack
 **TPTrack: Strengthening Tracking-by-Detection Methods from Tracklet Processing Perspectives**
 

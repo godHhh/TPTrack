@@ -6,17 +6,17 @@ from os.path import join, exists
 from collections import defaultdict
 from sklearn.preprocessing import normalize
 from scipy.optimize import linear_sum_assignment
-import GILink.config as cfg
-from GILink.train import train
-from GILink.dataset import LinkData
-from GILink.model import PostLinker
+import GlLink.config as cfg
+from GlLink.train import train
+from GlLink.dataset import LinkData
+from GlLink.model import PostLinker
 from datetime import datetime
 from loguru import logger
 
 INFINITY = 1e5
 
 
-class GILink:
+class GlLink:
     def __init__(self, path_in, path_out, model, dataset, thrT: tuple, thrS: int, thrP: float):
         self.thrP = thrP  # 预测阈值
         self.thrT = thrT  # 时域阈值

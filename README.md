@@ -61,7 +61,7 @@ We provide pretrained model weights for TPTrack.
 | MOT17-half-val  |  [Google Drive](https://drive.google.com/drive/folders/1dmhvc8hbxvMfSujq4lgUA3oYaxmPD8-V?usp=sharing) |
 | MOT17-test      |  [Google Drive](https://drive.google.com/drive/folders/1dmhvc8hbxvMfSujq4lgUA3oYaxmPD8-V?usp=sharing) |
 | MOT20-test      |  [Google Drive](https://drive.google.com/drive/folders/1dmhvc8hbxvMfSujq4lgUA3oYaxmPD8-V?usp=sharing) |
-| GILink          |  [Google Drive](https://drive.google.com/drive/folders/1dmhvc8hbxvMfSujq4lgUA3oYaxmPD8-V?usp=sharing) |
+| GlLink          |  [Google Drive](https://drive.google.com/drive/folders/1dmhvc8hbxvMfSujq4lgUA3oYaxmPD8-V?usp=sharing) |
 ## Data preparation
 
 1. Download [MOT17](https://motchallenge.net/), [MOT20](https://motchallenge.net/), [CrowdHuman](https://www.crowdhuman.org/), [Cityperson](https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/DATASET_ZOO.md), [ETHZ](https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/DATASET_ZOO.md), [DanceTrack](https://github.com/DanceTrack/DanceTrack) and put them under <TPTrack_HOME>/datasets in the following structure:
@@ -139,23 +139,23 @@ Download the COCO-pretrained YOLOX weight [here](https://github.com/Megvii-BaseD
 
 * **on DanceTrack Test set**
     ```shell
-    python tools/track.py -f exps/example/mot/yolox_dancetrack_test.py -c pretrained/tptrack_dance_model.pth.tar -b 1 -d 1 --fp16 --fuse --test --ECC --NSA --GPRI --GILink
+    python tools/track.py -f exps/example/mot/yolox_dancetrack_test.py -c pretrained/tptrack_dance_model.pth.tar -b 1 -d 1 --fp16 --fuse --test --ECC --NSA --GPRI --GlLink
     ```
     Submit the outputs to [the DanceTrack evaluation site](https://competitions.codalab.org/competitions/35786). This gives HOTA = 56.8.
 
 * **on MOT17 half val**
     ```shell
-    python3 tools/track.py -f exps/example/mot/yolox_x_ablation.py -c pretrained/tptrack_ablation.pth.tar -b 1 -d 1 --fp16 --fuse --ECC --NSA --GPRI --GILink
+    python3 tools/track.py -f exps/example/mot/yolox_x_ablation.py -c pretrained/tptrack_ablation.pth.tar -b 1 -d 1 --fp16 --fuse --ECC --NSA --GPRI --GlLink
     ```
     We follow the [TrackEval protocol](https://github.com/DanceTrack/DanceTrack/tree/main/TrackEval) for evaluation on the self-splitted validation set. This gives you HOTA = 69.5.
 
 * **on MOT17/MOT20 Test set**
     ```shell
     # MOT17
-    python3 tools/track.py -f exps/example/mot/yolox_x_mix_det.py -c pretrained/tptrack_x_mot17.pth.tar -b 1 -d 1 --fp16 --fuse --ECC --NSA --GPRI --GILink
+    python3 tools/track.py -f exps/example/mot/yolox_x_mix_det.py -c pretrained/tptrack_x_mot17.pth.tar -b 1 -d 1 --fp16 --fuse --ECC --NSA --GPRI --GlLink
 
     # MOT20
-    python3 tools/track.py -f exps/example/mot/yolox_x_mix_mot20_ch.py -c pretrained/tptrack_x_mot20.tar -b 1 -d 1 --fp16 --fuse --track_thresh 0.4 --ECC --NSA --GPRI --GILink
+    python3 tools/track.py -f exps/example/mot/yolox_x_mix_mot20_ch.py -c pretrained/tptrack_x_mot20.tar -b 1 -d 1 --fp16 --fuse --track_thresh 0.4 --ECC --NSA --GPRI --GlLink
     ```
     Submit the zipped output files to [MOTChallenge](https://motchallenge.net/) system. This gives you HOTA = 63.5 on MOT17 and HOTA = 61.7 on MOT20.
 

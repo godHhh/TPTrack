@@ -4,7 +4,7 @@ from os.path import join
 from random import randint, normalvariate
 from torch.utils.data import Dataset, DataLoader
 
-import GILink.config as cfg
+import GlLink.config as cfg
 
 SEQ = {
     'train': [

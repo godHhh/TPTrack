@@ -19,7 +19,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 from GPRI import GPRInterpolation
-from GILink.ModelLink import *
+from GlLink.ModelLink import *
 
 def make_parser():
     parser = argparse.ArgumentParser("YOLOX Eval")
@@ -113,7 +113,7 @@ def make_parser():
     parser.add_argument("--ECC", action='store_true')
     parser.add_argument("--NSA", action='store_true')
     parser.add_argument("--GPRI", action='store_true')
-    parser.add_argument("--GILink", action='store_true')
+    parser.add_argument("--GlLink", action='store_true')
     return parser
 
 
@@ -228,10 +228,10 @@ def main(exp, args, num_gpu):
             logger.info("GPRI模块在处理{}文件".format(file_result_name.split('/')[-1]))
             file_result_name = results_folder + '/' + file_result_name
             GPRInterpolation(path_in=file_result_name, path_out=file_result_name, interval=20, tau=10)
-            # GILink
-            if args.GILink:
-                logger.info("GILink模块在处理{}文件".format(file_result_name.split('/')[-1]))
-                linker = GILink(
+            # GlLink
+            if args.GlLink:
+                logger.info("GlLink模块在处理{}文件".format(file_result_name.split('/')[-1]))
+                linker = GlLink(
                     path_in=file_result_name,
                     path_out=file_result_name,
                     model=linker_model,
@@ -299,9 +299,9 @@ def main(exp, args, num_gpu):
 
 if __name__ == "__main__":
     args = make_parser().parse_args()
-    if args.GILink:
+    if args.GlLink:
         linker_model = PostLinker()
-        linker_model.load_state_dict(torch.load('GILink_model.pth'))
+        linker_model.load_state_dict(torch.load('GlLink_model.pth'))
         dataset = LinkData('', '')
     exp = get_exp(args.exp_file, args.name)
     exp.merge(args.opts)

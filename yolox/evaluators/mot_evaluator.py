@@ -31,7 +31,8 @@ def write_results(filename, results):
                 if track_id < 0:
                     continue
                 x1, y1, w, h = tlwh
-                line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1), h=round(h, 1), s=round(score, 2))
+                line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1),
+                                          h=round(h, 1), s=round(score, 2))
                 f.write(line)
     logger.info('save results to {}'.format(filename))
 
@@ -44,7 +45,8 @@ def write_results_no_score(filename, results):
                 if track_id < 0:
                     continue
                 x1, y1, w, h = tlwh
-                line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1), h=round(h, 1))
+                line = save_format.format(frame=frame_id, id=track_id, x1=round(x1, 1), y1=round(y1, 1), w=round(w, 1),
+                                          h=round(h, 1))
                 f.write(line)
     logger.info('save results to {}'.format(filename))
 
@@ -56,7 +58,7 @@ class MOTEvaluator:
     """
 
     def __init__(
-        self, args, dataloader, img_size, confthre, nmsthre, num_classes):
+            self, args, dataloader, img_size, confthre, nmsthre, num_classes):
         """
         Args:
             dataloader (Dataloader): evaluate dataloader.
@@ -74,14 +76,14 @@ class MOTEvaluator:
         self.args = args
 
     def evaluate(
-        self,
-        model,
-        distributed=False,
-        half=False,
-        trt_file=None,
-        decoder=None,
-        test_size=None,
-        result_folder=None
+            self,
+            model,
+            distributed=False,
+            half=False,
+            trt_file=None,
+            decoder=None,
+            test_size=None,
+            result_folder=None
     ):
         """
         COCO average precision (AP) Evaluation. Iterate inference on the test dataset
@@ -121,11 +123,11 @@ class MOTEvaluator:
             x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
             model(x)
             model = model_trt
-            
+
         tracker = BYTETracker(self.args)
         ori_thresh = self.args.track_thresh
         for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
-            progress_bar(self.dataloader)
+                progress_bar(self.dataloader)
         ):
             with torch.no_grad():
                 # init tracker
@@ -174,7 +176,7 @@ class MOTEvaluator:
                     outputs = decoder(outputs, dtype=outputs.type())
 
                 outputs = postprocess(outputs, self.num_classes, self.confthre, self.nmsthre)
-            
+
                 if is_time_record:
                     infer_end = time_synchronized()
                     inference_time += infer_end - start
@@ -202,376 +204,7 @@ class MOTEvaluator:
             if is_time_record:
                 track_end = time_synchronized()
                 track_time += track_end - infer_end
-            
-            if cur_iter == len(self.dataloader) - 1:
-                result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id]))
-                write_results(result_filename, results)
 
-        statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
-        if distributed:
-            data_list = gather(data_list, dst=0)
-            data_list = list(itertools.chain(*data_list))
-            torch.distributed.reduce(statistics, dst=0)
-
-        eval_results = self.evaluate_prediction(data_list, statistics)
-        synchronize()
-        return eval_results
-
-    def evaluate_sort(
-        self,
-        model,
-        distributed=False,
-        half=False,
-        trt_file=None,
-        decoder=None,
-        test_size=None,
-        result_folder=None
-    ):
-        """
-        COCO average precision (AP) Evaluation. Iterate inference on the test dataset
-        and the results are evaluated by COCO API.
-
-        NOTE: This function will change training mode to False, please save states if needed.
-
-        Args:
-            model : model to evaluate.
-
-        Returns:
-            ap50_95 (float) : COCO AP of IoU=50:95
-            ap50 (float) : COCO AP of IoU=50
-            summary (sr): summary info of evaluation.
-        """
-        # TODO half to amp_test
-        tensor_type = torch.cuda.HalfTensor if half else torch.cuda.FloatTensor
-        model = model.eval()
-        if half:
-            model = model.half()
-        ids = []
-        data_list = []
-        results = []
-        video_names = defaultdict()
-        progress_bar = tqdm if is_main_process() else iter
-
-        inference_time = 0
-        track_time = 0
-        n_samples = len(self.dataloader) - 1
-
-        if trt_file is not None:
-            from torch2trt import TRTModule
-
-            model_trt = TRTModule()
-            model_trt.load_state_dict(torch.load(trt_file))
-
-            x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
-            model(x)
-            model = model_trt
-            
-        tracker = Sort(self.args.track_thresh)
-        
-        for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
-            progress_bar(self.dataloader)
-        ):
-            with torch.no_grad():
-                # init tracker
-                frame_id = info_imgs[2].item()
-                video_id = info_imgs[3].item()
-                img_file_name = info_imgs[4]
-                video_name = img_file_name[0].split('/')[0]
-
-                if video_name not in video_names:
-                    video_names[video_id] = video_name
-                if frame_id == 1:
-                    tracker = Sort(self.args.track_thresh)
-                    if len(results) != 0:
-                        result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id - 1]))
-                        write_results_no_score(result_filename, results)
-                        results = []
-
-                imgs = imgs.type(tensor_type)
-
-                # skip the the last iters since batchsize might be not enough for batch inference
-                is_time_record = cur_iter < len(self.dataloader) - 1
-                if is_time_record:
-                    start = time.time()
-
-                outputs = model(imgs)
-                if decoder is not None:
-                    outputs = decoder(outputs, dtype=outputs.type())
-
-                outputs = postprocess(outputs, self.num_classes, self.confthre, self.nmsthre)
-            
-                if is_time_record:
-                    infer_end = time_synchronized()
-                    inference_time += infer_end - start
-
-            output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
-            data_list.extend(output_results)
-
-            # run tracking
-            online_targets = tracker.update(outputs[0], info_imgs, self.img_size)
-            online_tlwhs = []
-            online_ids = []
-            for t in online_targets:
-                tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
-                tid = t[4]
-                vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-            # save results
-            results.append((frame_id, online_tlwhs, online_ids))
-
-            if is_time_record:
-                track_end = time_synchronized()
-                track_time += track_end - infer_end
-            
-            if cur_iter == len(self.dataloader) - 1:
-                result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id]))
-                write_results_no_score(result_filename, results)
-
-        statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
-        if distributed:
-            data_list = gather(data_list, dst=0)
-            data_list = list(itertools.chain(*data_list))
-            torch.distributed.reduce(statistics, dst=0)
-
-        eval_results = self.evaluate_prediction(data_list, statistics)
-        synchronize()
-        return eval_results
-
-    def evaluate_deepsort(
-        self,
-        model,
-        distributed=False,
-        half=False,
-        trt_file=None,
-        decoder=None,
-        test_size=None,
-        result_folder=None,
-        model_folder=None
-    ):
-        """
-        COCO average precision (AP) Evaluation. Iterate inference on the test dataset
-        and the results are evaluated by COCO API.
-
-        NOTE: This function will change training mode to False, please save states if needed.
-
-        Args:
-            model : model to evaluate.
-
-        Returns:
-            ap50_95 (float) : COCO AP of IoU=50:95
-            ap50 (float) : COCO AP of IoU=50
-            summary (sr): summary info of evaluation.
-        """
-        # TODO half to amp_test
-        tensor_type = torch.cuda.HalfTensor if half else torch.cuda.FloatTensor
-        model = model.eval()
-        if half:
-            model = model.half()
-        ids = []
-        data_list = []
-        results = []
-        video_names = defaultdict()
-        progress_bar = tqdm if is_main_process() else iter
-
-        inference_time = 0
-        track_time = 0
-        n_samples = len(self.dataloader) - 1
-
-        if trt_file is not None:
-            from torch2trt import TRTModule
-
-            model_trt = TRTModule()
-            model_trt.load_state_dict(torch.load(trt_file))
-
-            x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
-            model(x)
-            model = model_trt
-            
-        tracker = DeepSort(model_folder, min_confidence=self.args.track_thresh)
-        
-        for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
-            progress_bar(self.dataloader)
-        ):
-            with torch.no_grad():
-                # init tracker
-                frame_id = info_imgs[2].item()
-                video_id = info_imgs[3].item()
-                img_file_name = info_imgs[4]
-                video_name = img_file_name[0].split('/')[0]
-
-                if video_name not in video_names:
-                    video_names[video_id] = video_name
-                if frame_id == 1:
-                    tracker = DeepSort(model_folder, min_confidence=self.args.track_thresh)
-                    if len(results) != 0:
-                        result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id - 1]))
-                        write_results_no_score(result_filename, results)
-                        results = []
-
-                imgs = imgs.type(tensor_type)
-
-                # skip the the last iters since batchsize might be not enough for batch inference
-                is_time_record = cur_iter < len(self.dataloader) - 1
-                if is_time_record:
-                    start = time.time()
-
-                outputs = model(imgs)
-                if decoder is not None:
-                    outputs = decoder(outputs, dtype=outputs.type())
-
-                outputs = postprocess(outputs, self.num_classes, self.confthre, self.nmsthre)
-            
-                if is_time_record:
-                    infer_end = time_synchronized()
-                    inference_time += infer_end - start
-
-            output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
-            data_list.extend(output_results)
-
-            # run tracking
-            online_targets = tracker.update(outputs[0], info_imgs, self.img_size, img_file_name[0])
-            online_tlwhs = []
-            online_ids = []
-            for t in online_targets:
-                tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
-                tid = t[4]
-                vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-            # save results
-            results.append((frame_id, online_tlwhs, online_ids))
-
-            if is_time_record:
-                track_end = time_synchronized()
-                track_time += track_end - infer_end
-            
-            if cur_iter == len(self.dataloader) - 1:
-                result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id]))
-                write_results_no_score(result_filename, results)
-
-        statistics = torch.cuda.FloatTensor([inference_time, track_time, n_samples])
-        if distributed:
-            data_list = gather(data_list, dst=0)
-            data_list = list(itertools.chain(*data_list))
-            torch.distributed.reduce(statistics, dst=0)
-
-        eval_results = self.evaluate_prediction(data_list, statistics)
-        synchronize()
-        return eval_results
-
-    def evaluate_motdt(
-        self,
-        model,
-        distributed=False,
-        half=False,
-        trt_file=None,
-        decoder=None,
-        test_size=None,
-        result_folder=None,
-        model_folder=None
-    ):
-        """
-        COCO average precision (AP) Evaluation. Iterate inference on the test dataset
-        and the results are evaluated by COCO API.
-
-        NOTE: This function will change training mode to False, please save states if needed.
-
-        Args:
-            model : model to evaluate.
-
-        Returns:
-            ap50_95 (float) : COCO AP of IoU=50:95
-            ap50 (float) : COCO AP of IoU=50
-            summary (sr): summary info of evaluation.
-        """
-        # TODO half to amp_test
-        tensor_type = torch.cuda.HalfTensor if half else torch.cuda.FloatTensor
-        model = model.eval()
-        if half:
-            model = model.half()
-        ids = []
-        data_list = []
-        results = []
-        video_names = defaultdict()
-        progress_bar = tqdm if is_main_process() else iter
-
-        inference_time = 0
-        track_time = 0
-        n_samples = len(self.dataloader) - 1
-
-        if trt_file is not None:
-            from torch2trt import TRTModule
-
-            model_trt = TRTModule()
-            model_trt.load_state_dict(torch.load(trt_file))
-
-            x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
-            model(x)
-            model = model_trt
-            
-        tracker = OnlineTracker(model_folder, min_cls_score=self.args.track_thresh)
-        for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
-            progress_bar(self.dataloader)
-        ):
-            with torch.no_grad():
-                # init tracker
-                frame_id = info_imgs[2].item()
-                video_id = info_imgs[3].item()
-                img_file_name = info_imgs[4]
-                video_name = img_file_name[0].split('/')[0]
-
-                if video_name not in video_names:
-                    video_names[video_id] = video_name
-                if frame_id == 1:
-                    tracker = OnlineTracker(model_folder, min_cls_score=self.args.track_thresh)
-                    if len(results) != 0:
-                        result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id - 1]))
-                        write_results(result_filename, results)
-                        results = []
-
-                imgs = imgs.type(tensor_type)
-
-                # skip the the last iters since batchsize might be not enough for batch inference
-                is_time_record = cur_iter < len(self.dataloader) - 1
-                if is_time_record:
-                    start = time.time()
-
-                outputs = model(imgs)
-                if decoder is not None:
-                    outputs = decoder(outputs, dtype=outputs.type())
-
-                outputs = postprocess(outputs, self.num_classes, self.confthre, self.nmsthre)
-            
-                if is_time_record:
-                    infer_end = time_synchronized()
-                    inference_time += infer_end - start
-
-            output_results = self.convert_to_coco_format(outputs, info_imgs, ids)
-            data_list.extend(output_results)
-
-            # run tracking
-            online_targets = tracker.update(outputs[0], info_imgs, self.img_size, img_file_name[0])
-            online_tlwhs = []
-            online_ids = []
-            online_scores = []
-            for t in online_targets:
-                tlwh = t.tlwh
-                tid = t.track_id
-                vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > self.args.min_box_area and not vertical:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-                    online_scores.append(t.score)
-            # save results
-            results.append((frame_id, online_tlwhs, online_ids, online_scores))
-
-            if is_time_record:
-                track_end = time_synchronized()
-                track_time += track_end - infer_end
-            
             if cur_iter == len(self.dataloader) - 1:
                 result_filename = os.path.join(result_folder, '{}.txt'.format(video_names[video_id]))
                 write_results(result_filename, results)
@@ -589,7 +222,7 @@ class MOTEvaluator:
     def convert_to_coco_format(self, outputs, info_imgs, ids):
         data_list = []
         for (output, img_h, img_w, img_id) in zip(
-            outputs, info_imgs[0], info_imgs[1], ids
+                outputs, info_imgs[0], info_imgs[1], ids
         ):
             if output is None:
                 continue
@@ -637,9 +270,9 @@ class MOTEvaluator:
             [
                 "Average {} time: {:.2f} ms".format(k, v)
                 for k, v in zip(
-                    ["forward", "track", "inference"],
-                    [a_infer_time, a_track_time, (a_infer_time + a_track_time)],
-                )
+                ["forward", "track", "inference"],
+                [a_infer_time, a_track_time, (a_infer_time + a_track_time)],
+            )
             ]
         )
 
@@ -659,7 +292,7 @@ class MOTEvaluator:
                 from pycocotools import cocoeval as COCOeval
                 logger.warning("Use standard COCOeval.")
             '''
-            #from pycocotools.cocoeval import COCOeval
+            # from pycocotools.cocoeval import COCOeval
             from yolox.layers import COCOeval_opt as COCOeval
             cocoEval = COCOeval(cocoGt, cocoDt, annType[1])
             cocoEval.evaluate()

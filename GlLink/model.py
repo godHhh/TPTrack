@@ -46,10 +46,10 @@ class Classifier(nn.Module):
         self.fc2 = nn.Linear(cin // 4, 4)
 
     def forward(self, x1, x2, x3, x4):
-        x = torch.cat((x1, x2, x3, x4), dim=1)  # [B,256] -> [B,512]
-        x = self.fc1(x)  # [B,512] -> [B,128]
+        x = torch.cat((x1, x2, x3, x4), dim=1)
+        x = self.fc1(x)
         x = self.relu(x)
-        x = self.fc2(x)  # [B,128] -> [B,2]
+        x = self.fc2(x)
         return x
 
 

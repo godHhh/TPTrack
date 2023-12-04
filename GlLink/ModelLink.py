@@ -1,16 +1,7 @@
-import os
-import glob
-import torch
+
 import numpy as np
-from os.path import join, exists
 from collections import defaultdict
-from sklearn.preprocessing import normalize
 from scipy.optimize import linear_sum_assignment
-import GlLink.config as cfg
-from GlLink.train import train
-from GlLink.dataset import LinkData
-from GlLink.model import PostLinker
-from datetime import datetime
 from loguru import logger
 
 INFINITY = 1e5
@@ -101,7 +92,6 @@ class GlLink:
                 ID2ID[v] = ID2ID[k]
             else:
                 ID2ID[v] = k
-        # print('  ', ID2ID.items())
         '''结果存储'''
         res = self.track.copy()
         for k, v in ID2ID.items():

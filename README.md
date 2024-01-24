@@ -3,10 +3,6 @@
 
 <p align="center"><img src="assets/sota.png" width="500"/></p>
 
-## Abstract
-
-As a fundamental task in computer vision, multi-object tracking (MOT) has gained increasing attention due to its commercial and academic potential. However, accurately tracking multiple objects is highly challenging. The problems of object occlusion, deformation and real-time requirements have long been obstacles to be tackled in the field of multi-object tracking. In this paper, we first propose a novel approach to address the problem of tracklet fragmentation caused by occlusion and deformation by establishing a global linking model to obtain global information of trajectories. Then, we reduce camera jitter using camera motion compensation to more accurately locate objects in the moving scene. Next, to address the issue of linear interpolation that ignores a large amount of motion information, we utilize Gaussian process regression for smooth interpolation to fill in missing detections and reduce the noise covariance of Kalman filter through adaptive computation. We integrate our work together and ultimately propose a simple, real-time and robust multi-object tracker named TPTrack. Through extensive experiments, our proposed TPTrack tracker achieves HOTA scores of 63.5, 61.7 and 56.8 on the MOT17, MOT20 and DanceTrack datasets respectively. Notably, it exhibits a significant 19\% enhancement over the state-of-the-art approach specifically on the DanceTrack dataset. Furthermore, PTTrack operates at a speed of 33.7 FPS on a single GPU.
-
 ## Tracking performance
 ### Results on MOT challenge test set
 | Dataset    |  HOTA | IDF1 | MOTA | AssA | DetA | IDs | FPS |

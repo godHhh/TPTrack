@@ -228,19 +228,21 @@ def main(exp, args, num_gpu):
             logger.info("GPRI模块在处理{}文件".format(file_result_name.split('/')[-1]))
             file_result_name = results_folder + '/' + file_result_name
             GPRInterpolation(path_in=file_result_name, path_out=file_result_name, interval=20, tau=10)
-            # GlLink
-            if args.GlLink:
-                logger.info("GlLink模块在处理{}文件".format(file_result_name.split('/')[-1]))
-                linker = GlLink(
-                    path_in=file_result_name,
-                    path_out=file_result_name,
-                    model=linker_model,
-                    dataset=dataset,
-                    thrT=(0, 30),
-                    thrS=75,
-                    thrP=0.06
-                )
-                linker.link()
+    # GlLink
+    if args.GlLink:
+        for file_result_name in os.listdir(results_folder):
+            file_result_name = results_folder + '/' + file_result_name
+            logger.info("GlLink模块在处理{}文件".format(file_result_name.split('/')[-1]))
+            linker = GlLink(
+                path_in=file_result_name,
+                path_out=file_result_name,
+                model=linker_model,
+                dataset=dataset,
+                thrT=(0, 30),
+                thrS=75,
+                thrP=0.06
+            )
+            linker.link()
     logger.info("\n" + summary)
 
     # evaluate MOTA
@@ -301,7 +303,7 @@ if __name__ == "__main__":
     args = make_parser().parse_args()
     if args.GlLink:
         linker_model = PostLinker()
-        linker_model.load_state_dict(torch.load('GlLink_model.pth'))
+        linker_model.load_state_dict(torch.load('/home/mrli/980pro/window_project/TPTrack/pretrained/GlLink.pth'))
         dataset = LinkData('', '')
     exp = get_exp(args.exp_file, args.name)
     exp.merge(args.opts)

@@ -3,6 +3,8 @@ import numpy as np
 from collections import defaultdict
 from scipy.optimize import linear_sum_assignment
 from loguru import logger
+from GlLink.dataset import LinkData
+from GlLink.model import PostLinker
 
 INFINITY = 1e5
 

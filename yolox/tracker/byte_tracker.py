@@ -10,8 +10,10 @@ from .kalman_filter import KalmanFilter
 from yolox.tracker import matching
 from .basetrack import BaseTrack, TrackState
 
+
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
+
     def __init__(self, tlwh, score):
 
         # wait activate
@@ -22,6 +24,30 @@ class STrack(BaseTrack):
 
         self.score = score
         self.tracklet_len = 0
+
+    def camera_update(self, video, frame, args):
+        video = video.replace('DPM', 'FRCNN')
+        video = video.replace('SDP', 'FRCNN')
+        dict_frame_matrix = args.ecc[video]
+        frame = str(int(frame))
+        if frame in dict_frame_matrix:
+            matrix = self.get_matrix(dict_frame_matrix, frame)
+            x1, y1, x2, y2 = self.tlbr
+            x1_, y1_, _ = matrix @ np.array([x1, y1, 1]).T
+            x2_, y2_, _ = matrix @ np.array([x2, y2, 1]).T
+            w, h = x2_ - x1_, y2_ - y1_
+            cx, cy = x1_ + w / 2, y1_ + h / 2
+            self.mean[:4] = [cx, cy, w / h, h]
+
+    @staticmethod
+    def get_matrix(dict_frame_matrix, frame):
+        eye = np.eye(3)
+        matrix = dict_frame_matrix[frame]
+        dist = np.linalg.norm(eye - matrix)
+        if dist < 100:
+            return matrix
+        else:
+            return eye
 
     def predict(self):
         mean_state = self.mean.copy()
@@ -67,6 +93,10 @@ class STrack(BaseTrack):
         if new_id:
             self.track_id = self.next_id()
         self.score = new_track.score
+
+    def camera_update(self, video, frame):
+        for track in self.tracked_stracks:
+            track.camera_update(video, frame, self.args)
 
     def update(self, new_track, frame_id):
         """
@@ -150,7 +180,7 @@ class BYTETracker(object):
 
         self.frame_id = 0
         self.args = args
-        #self.det_thresh = args.track_thresh
+        # self.det_thresh = args.track_thresh
         self.det_thresh = args.track_thresh + 0.1
         self.buffer_size = int(frame_rate / 30.0 * args.track_buffer)
         self.max_time_lost = self.buffer_size
@@ -224,7 +254,7 @@ class BYTETracker(object):
         if len(dets_second) > 0:
             '''Detections'''
             detections_second = [STrack(STrack.tlbr_to_tlwh(tlbr), s) for
-                          (tlbr, s) in zip(dets_second, scores_second)]
+                                 (tlbr, s) in zip(dets_second, scores_second)]
         else:
             detections_second = []
         r_tracked_stracks = [strack_pool[i] for i in u_track if strack_pool[i].state == TrackState.Tracked]

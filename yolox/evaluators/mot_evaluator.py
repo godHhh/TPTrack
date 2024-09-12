@@ -186,6 +186,8 @@ class MOTEvaluator:
 
             # run tracking
             if outputs[0] is not None:
+                if self.args.ECC:
+                    tracker.camera_update(video_name, frame_id)
                 online_targets = tracker.update(outputs[0], info_imgs, self.img_size)
                 online_tlwhs = []
                 online_ids = []
